@@ -253,3 +253,10 @@ func stringToNode(a string) *align {
 	}
 	return o
 }
+
+// Align returns align structured strings
+func Align(a string) string {
+	s := stringToNode(a)
+	defer s.put()
+	return s.String()
+}
