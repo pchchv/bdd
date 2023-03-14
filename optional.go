@@ -1,5 +1,11 @@
 package bdd
 
+import (
+	"fmt"
+	"io"
+	"reflect"
+)
+
 const (
 	// Formatted option
 	_                  option = 1 << (31 - iota)
@@ -30,6 +36,38 @@ func NewOptional(depth int, b style, opt option) *optional {
 		style: b,
 		opt:   opt,
 		depth: depth,
+	}
+}
+
+func (s *optional) Fprint(w io.Writer, i ...interface{}) (int, error) {
+	return fmt.Fprint(w, s.Sprint(i...))
+}
+
+func (s *optional) Print(i ...interface{}) (int, error) {
+	return fmt.Print(s.Sprint(i...))
+}
+
+func (s *optional) Sprint(i ...interface{}) string {
+	switch len(i) {
+	case 0:
+		return ""
+	case 1:
+		buf := getBuilder()
+		defer putBuilder(buf)
+		sb := &format{
+			buf:      buf,
+			filter:   map[uintptr]bool{},
+			optional: *s,
+		}
+		sb.fmt(reflect.ValueOf(i[0]), 0)
+		sb.buf.WriteByte('\n')
+		ret := sb.buf.String()
+		if s.opt.IsCanRowSpan() {
+			return Align(ret)
+		}
+		return ret
+	default:
+		return s.Sprint(i)
 	}
 }
 
