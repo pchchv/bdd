@@ -15,9 +15,23 @@ const (
 	StyleJPrint       // The json style display; Do not show private
 )
 
+type optional struct {
+	style style  // Format style
+	depth int    // Maximum recursion depth
+	opt   option // Option
+}
+
 type style int
 
 type option uint32
+
+func NewOptional(depth int, b style, opt option) *optional {
+	return &optional{
+		style: b,
+		opt:   opt,
+		depth: depth,
+	}
+}
 
 func (t option) IsCanDefaultString() bool {
 	return (t & CanDefaultString) != 0
