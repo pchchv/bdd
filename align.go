@@ -152,3 +152,28 @@ func (n *align) put() {
 	}
 }
 
+func (n *align) String() string {
+	buf := getBuilder()
+	defer putBuilder(buf)
+
+	n.strings(0, buf)
+	s := buf.String()
+
+	if len(s) >= 2 {
+		return s[2:]
+	}
+	return ""
+}
+
+func (n *align) strings(d int, buf builder) {
+	buf.WriteString(spacing(d))
+	buf.WriteString(n.value.String())
+
+	if n.child != nil {
+		n.child.strings(d+1, buf)
+	}
+
+	if x := n.next; x != nil {
+		x.strings(d, buf)
+	}
+}
