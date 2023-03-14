@@ -1,5 +1,7 @@
 package bdd
 
+import "strings"
+
 type align struct {
 	child *align
 	next  *align
@@ -99,3 +101,54 @@ func (n *align) mergeNextSize(s int, ms []int) {
 		}
 	}
 }
+
+// colonPos align the data after the colon
+func (n *align) colonPos() {
+	b := n
+	for b != nil {
+		m := 0
+		for x := b; x != nil; x = x.next {
+			if x.colon <= 0 {
+				continue
+			}
+			bl := strLen(x.value.String()[:x.colon])
+			if bl > m {
+				m = bl
+			}
+			if x.child != nil {
+				break
+			}
+		}
+		for x := b; x != nil; x = x.next {
+
+			if x.colon > 0 {
+				bl := strLen(x.value.String()[:x.colon])
+				if m-bl > 0 {
+					t := strings.Replace(x.value.String(), colSym, colSym+spac(m-bl), 1)
+					x.value.Reset()
+					x.value.WriteString(t)
+				}
+			}
+			b = x.next
+			if x.child != nil {
+				break
+			}
+		}
+	}
+}
+
+func (n *align) put() {
+	if n.value != nil {
+		putBuilder(n.value)
+		n.value = nil
+	}
+
+	if n.child != nil {
+		n.child.put()
+	}
+
+	if n.next != nil {
+		n.next.put()
+	}
+}
+
