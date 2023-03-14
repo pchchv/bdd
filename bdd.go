@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"unicode"
+	"unicode/utf8"
 )
 
 const (
@@ -100,6 +102,153 @@ func (s *format) nameBuf(t reflect.Type) bool {
 	return false
 }
 
+// xxBuf writes the buffer in hexadecimal format
+func (s *format) xxBuf(v reflect.Value, i interface{}) {
+	switch s.style {
+	case StyleJPrint:
+		s.writeByte('"')
+		defer s.writeByte('"')
+	case StyleTPrint:
+		s.writeByte('<')
+		defer s.writeByte('>')
+	}
+	s.nameBuf(v.Type())
+	s.writeFormat("(0x%020x)", i)
+	return
+}
+
+// structBuf write buffer with struct
+func (s *format) structBuf(v reflect.Value, depth int) {
+	s.nameBuf(v.Type())
+	s.writeByte('{')
+	t := v.Type()
+	for i := 0; i != t.NumField(); i++ {
+		f := t.Field(i)
+		v0 := v.Field(i)
+		s.depthBuf(depth + 1)
+		s.writeString(f.Name)
+		s.writeString(colSym)
+		if isPrivateName(f.Name) {
+			s.writeString(private)
+		} else {
+			s.fmt(v0, depth+1)
+		}
+	}
+	s.depthBuf(depth)
+	s.writeByte('}')
+	return
+}
+
+// mapBuf write buffer with map
+func (s *format) mapBuf(v reflect.Value, depth int) {
+	mk := v.MapKeys()
+	valueSlice(mk).Sort()
+	s.nameBuf(v.Type())
+	s.writeByte('{')
+	for i := 0; i != len(mk); i++ {
+		k := mk[i]
+		switch s.style {
+		case StyleJPrint:
+			if i != 0 {
+				s.depthBuf(depth)
+				s.writeByte(',')
+			} else {
+				s.depthBuf(depth + 1)
+			}
+		default:
+			s.depthBuf(depth + 1)
+		}
+		s.fmt(k, s.depth-1)
+		s.writeString(colSym)
+		s.fmt(v.MapIndex(k), depth+1)
+	}
+	s.depthBuf(depth)
+	s.writeByte('}')
+	return
+}
+
+// depthBuf write buffer with depth
+func (s *format) depthBuf(i int) {
+	s.writeByte('\n')
+	for k := 0; k < i; k++ {
+		s.writeByte(Space)
+	}
+}
+
+// stringBuf write buffer with string
+func (s *format) stringBuf(v reflect.Value) {
+	switch s.style {
+	case StyleTPrint:
+		s.defaultBuf(v)
+	case StyleBPrint, StyleJPrint:
+		s.writeString(strconv.Quote(v.String()))
+	default:
+		s.writeString(v.String())
+	}
+	return
+}
+
+// funcBuf write buffer with func address
+func (s *format) funcBuf(v reflect.Value) {
+	switch s.style {
+	case StyleJPrint:
+		s.writeByte('"')
+		defer s.writeByte('"')
+	case StyleTPrint:
+		s.writeByte('<')
+		defer s.writeByte('>')
+	}
+	s.writeString("func(")
+	t := v.Type()
+	if t.NumIn() != 0 {
+		for i := 0; ; {
+			s.writeString(t.In(i).String())
+			i++
+			if i == t.NumIn() {
+				break
+			}
+			s.writeByte(',')
+		}
+	}
+	s.writeString(")(")
+	if t.NumOut() != 0 {
+		for i := 0; ; {
+			s.writeString(t.Out(i).String())
+			i++
+			if i == t.NumOut() {
+				break
+			}
+			s.writeByte(',')
+		}
+	}
+	s.writeByte(')')
+	s.writeFormat("(0x%020x)", v.Pointer())
+	return
+}
+
+// sliceBuf write buffer with slice
+func (s *format) sliceBuf(v reflect.Value, depth int) {
+	s.nameBuf(v.Type())
+	s.writeByte('[')
+	for i := 0; i != v.Len(); i++ {
+		switch s.style {
+		case StyleJPrint:
+			if i != 0 {
+				s.depthBuf(depth)
+				s.writeByte(',')
+			} else {
+				s.depthBuf(depth + 1)
+			}
+		default:
+			s.depthBuf(depth + 1)
+		}
+		s.fmt(v.Index(i), depth+1)
+	}
+	s.depthBuf(depth)
+	s.writeByte(']')
+	return
+}
+
 // getString writes a buffer with the default string,
 // returns true if no default string is possible
 func (s *format) getString(v reflect.Value) bool {
@@ -133,21 +282,6 @@ func (s *format) getString(v reflect.Value) bool {
 	return true
 }
 
-// xxBuf writes the buffer in hexadecimal format
-func (s *format) xxBuf(v reflect.Value, i interface{}) {
-	switch s.style {
-	case StyleJPrint:
-		s.writeByte('"')
-		defer s.writeByte('"')
-	case StyleTPrint:
-		s.writeByte('<')
-		defer s.writeByte('>')
-	}
-	s.nameBuf(v.Type())
-	s.writeFormat("(0x%020x)", i)
-	return
-}
-
 // getString returns default string
 func getString(v reflect.Value) string {
 	if v.Kind() == reflect.Interface {
@@ -170,4 +304,24 @@ func getString(v reflect.Value) string {
 		return e.GoString()
 	}
 	return ""
+}
+
+// isPrivateName returns it is a private name
+func isPrivateName(name string) bool {
+	ch, _ := utf8.DecodeRuneInString(name)
+	return !unicode.IsUpper(ch)
+}
+
+// struct2Map returns map from struct
+func struct2Map(v reflect.Value) map[string]interface{} {
+	t := v.Type()
+	data := map[string]interface{}{}
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if isPrivateName(f.Name) {
+			continue
+		}
+		data[f.Name] = v.Field(i).Interface()
+	}
+	return data
 }
