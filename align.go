@@ -177,3 +177,79 @@ func (n *align) strings(d int, buf builder) {
 		x.strings(d, buf)
 	}
 }
+
+func (n *align) toChild() *align {
+	if n.child == nil {
+		buf := getBuilder()
+		n.child = &align{
+			value: buf,
+		}
+	}
+
+	return n.child
+}
+
+func (n *align) toNext() *align {
+	if n.next == nil {
+		buf := getBuilder()
+		n.next = &align{
+			value: buf,
+		}
+	}
+	return n.next
+}
+
+func getDepth(a string) int {
+	for i := 0; i != len(a); i++ {
+		switch a[i] {
+		case Space:
+		case ',':
+			return i + 1
+		default:
+			return i
+		}
+	}
+	return 0
+}
+
+func stringToNode(a string) *align {
+	ss := strings.Split(a, "\n")
+	depth := 0
+	o := &align{}
+	x := o
+	buf := getBuilder()
+	x.value = buf
+	st := []*align{}
+	for i := 0; i != len(ss); i++ {
+		b := ss[i]
+		d := getDepth(b)
+		switch {
+		case d == depth:
+			x = x.toNext()
+		case d > depth:
+			st = append(st, x)
+			x = x.toChild()
+		case d < depth:
+			if len(st) == 0 {
+				x = x.toNext()
+			} else {
+				x = st[len(st)-1]
+				if x != nil {
+					st = st[:len(st)-1]
+					x.child.colonPos()
+					x.child.tablePos()
+					x.child.lrPos()
+					x = x.toNext()
+				}
+			}
+		}
+
+		depth = d
+		if d > 0 {
+			d--
+		}
+		x.value.WriteString(b[d:])
+		x.colon = strings.Index(x.value.String(), colSym)
+	}
+	return o
+}
