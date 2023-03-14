@@ -99,3 +99,75 @@ func (s *format) nameBuf(t reflect.Type) bool {
 	}
 	return false
 }
+
+// getString writes a buffer with the default string,
+// returns true if no default string is possible
+func (s *format) getString(v reflect.Value) bool {
+	if !s.opt.IsCanDefaultString() {
+		return false
+	}
+
+	switch s.style {
+	case StyleJPrint:
+		r := getString(v)
+		if r == "" {
+			return false
+		}
+		vv, _ := json.Marshal(v.Interface())
+		s.write(vv)
+	case StyleTPrint:
+		r := getString(v)
+		if r == "" {
+			return false
+		}
+		s.writeByte('<')
+		s.writeString(r)
+		s.writeByte('>')
+	default:
+		r := getString(v)
+		if r == "" {
+			return false
+		}
+		s.writeString(r)
+	}
+	return true
+}
+
+// xxBuf writes the buffer in hexadecimal format
+func (s *format) xxBuf(v reflect.Value, i interface{}) {
+	switch s.style {
+	case StyleJPrint:
+		s.writeByte('"')
+		defer s.writeByte('"')
+	case StyleTPrint:
+		s.writeByte('<')
+		defer s.writeByte('>')
+	}
+	s.nameBuf(v.Type())
+	s.writeFormat("(0x%020x)", i)
+	return
+}
+
+// getString returns default string
+func getString(v reflect.Value) string {
+	if v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return ""
+		}
+		return getString(v.Elem())
+	}
+
+	if !v.CanInterface() {
+		return ""
+	}
+
+	i := v.Interface()
+
+	if e, b := i.(fmt.Stringer); b && e != nil {
+		return e.String()
+	}
+	if e, b := i.(fmt.GoStringer); b && e != nil {
+		return e.GoString()
+	}
+	return ""
+}
