@@ -282,6 +282,41 @@ func (s *format) getString(v reflect.Value) bool {
 	return true
 }
 
+func (s *format) switchType(v reflect.Value, depth int) {
+	switch v.Kind() {
+	case reflect.Invalid:
+		s.nilBuf()
+	case reflect.Struct:
+		switch s.style {
+		case StyleJPrint:
+			s.mapBuf(reflect.ValueOf(struct2Map(v)), depth)
+		default:
+			s.structBuf(v, depth)
+		}
+	case reflect.Map:
+		s.mapBuf(v, depth)
+	case reflect.Array, reflect.Slice:
+		s.sliceBuf(v, depth)
+	case reflect.String:
+		s.stringBuf(v)
+	case reflect.Func:
+		s.funcBuf(v)
+	case reflect.Uintptr:
+		s.xxBuf(v, v.Uint())
+	case reflect.Chan, reflect.Ptr, reflect.UnsafePointer:
+		s.xxBuf(v, v.Pointer())
+	case reflect.Interface:
+		v = v.Elem()
+		if v.IsValid() {
+			s.fmt(v, depth)
+		} else {
+			s.nilBuf()
+		}
+	default:
+		s.defaultBuf(v)
+	}
+}
+
 // getString returns default string
 func getString(v reflect.Value) string {
 	if v.Kind() == reflect.Interface {
