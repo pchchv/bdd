@@ -45,3 +45,15 @@ func formatMap(str string, par map[string]string) string {
 		return s
 	})
 }
+
+// Format formats the string. Example:
+// format("hello {name}", "bdd") to "hello bdd"
+func Format(str string, data ...interface{}) string {
+	par := map[string]string{}
+	for _, d := range data {
+		for k, v := range toMap(d) {
+			par[k] = v
+		}
+	}
+	return formatMap(str, par)
+}
