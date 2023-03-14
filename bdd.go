@@ -317,6 +317,53 @@ func (s *format) switchType(v reflect.Value, depth int) {
 	}
 }
 
+func (s *format) fmt(va reflect.Value, depth int) {
+	if !va.IsValid() {
+		s.nilBuf()
+		return
+	}
+
+	if va.Kind() == reflect.Ptr && va.IsNil() {
+		s.nilBuf()
+		return
+	}
+
+	v := va
+	if depth >= s.depth {
+		s.defaultBuf(v)
+		return
+	}
+
+	if s.getString(v) {
+		return
+	}
+
+	for v.Kind() == reflect.Ptr {
+		if s.opt.IsCanDefaultString() {
+			if s.filter[v.Pointer()] {
+				s.xxBuf(v, v.Pointer())
+				return
+			}
+			s.filter[v.Pointer()] = true
+		}
+
+		v = v.Elem()
+		if !v.IsValid() {
+			s.nilBuf()
+			return
+		}
+		switch s.style {
+		case StyleJPrint:
+		default:
+			s.writeByte('&')
+		}
+		if s.getString(va) {
+			return
+		}
+	}
+	s.switchType(v, depth)
+}
+
 // getString returns default string
 func getString(v reflect.Value) string {
 	if v.Kind() == reflect.Interface {
