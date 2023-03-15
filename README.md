@@ -1,6 +1,6 @@
-# bdd
+# **bdd** [![Go Report Card](https://goreportcard.com/badge/github.com/pchchv/bdd)](https://goreportcard.com/report/github.com/pchchv/bdd) [![Go Reference](https://pkg.go.dev/badge/github.com/pchchv/bdd.svg)](https://pkg.go.dev/github.com/pchchv/bdd) [![GitHub license](https://img.shields.io/github/license/pchchv/bdd.svg)](https://github.com/pchchv/bdd/blob/master/LICENSE)
 
-Beautiful data display for Go
+### **B**eautiful **d**ata **d**isplay for Go
 
 ## Usage
 
