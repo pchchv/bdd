@@ -5,13 +5,14 @@ import (
 	"strings"
 )
 
-func Flatten(nested map[string]interface{}) (flatmap map[string]interface{}) {
-	if nested != nil {
-		var prefixes []string
-		flatten(0, flatmap, nested, prefixes)
-		return
+func Flatten(nested map[string]interface{}) map[string]interface{} {
+	if nested == nil {
+		return nested
 	}
-	return nested
+	flatmap := map[string]interface{}{}
+	var prefixes []string
+	flatten(0, flatmap, nested, prefixes)
+	return flatmap
 }
 
 func flatten(deep int, flatMap map[string]interface{}, nested interface{}, prefixes []string) {
