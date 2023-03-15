@@ -1,8 +1,15 @@
 package bdd
 
-import "unicode/utf8"
+import (
+	"fmt"
+	"unicode/utf8"
+)
 
-var space = map[int]string{}
+var (
+	space   = map[int]string{}
+	Printf  = fmt.Printf
+	Println = fmt.Println
+)
 
 func runeWidth(r rune) int {
 	switch {
