@@ -1,6 +1,7 @@
 package bdd
 
 import (
+	"testing"
 	"time"
 )
 
@@ -33,3 +34,23 @@ type T struct {
 }
 
 var testdata *T
+
+func TestMultiPrint(t *testing.T) {
+	ff := []func(a ...interface{}) string{
+		Sputs,
+		Sp,
+		Sd,
+		Sprint,
+		Spjson,
+	}
+	for _, f := range ff {
+		if f([]interface{}{1, 2}) != f(1, 2) {
+			t.Fail()
+		}
+	}
+}
+
+func TestNewOptional(t *testing.T) {
+	o := NewOptional(0, 0, 0)
+	o.Print(testdata)
+}
