@@ -55,6 +55,26 @@ func TestNewOptional(t *testing.T) {
 	o.Print(testdata)
 }
 
+func TestPrint(t *testing.T) {
+	Print(testdata)
+}
+
+func TestPuts(t *testing.T) {
+	Puts(testdata)
+}
+
+func TestP(t *testing.T) {
+	P(testdata)
+}
+
+func TestPjson(t *testing.T) {
+	Pjson(testdata)
+}
+
+func TestD(t *testing.T) {
+	D(testdata)
+}
+
 func init() {
 	testdata = &T{
 		bbb{},
