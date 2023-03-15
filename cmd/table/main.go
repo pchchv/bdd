@@ -3,10 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
+
+	"github.com/pchchv/bdd"
 )
 
-var w = flag.Bool("w", false, "Write the changes to the file")
+var (
+	w      = flag.Bool("w", false, "Write the changes to the file")
+	prefix = flag.String("p", "//", "Prefix")
+	split  = flag.String("s", ",", "Split rune")
+)
 
 func init() {
 	flag.Usage = func() {
@@ -20,10 +27,37 @@ func init() {
 	flag.Parse()
 }
 
+func format(file string, prefix, split string, w bool) error {
+	b, err := ioutil.ReadFile(file)
+	if err != nil {
+		return err
+	}
+
+	ret := bdd.TableText(string(b), prefix, split)
+	if !w {
+		fmt.Print(ret)
+		return nil
+	}
+
+	err = ioutil.WriteFile(file, []byte(ret), 0666)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
 	args := flag.Args()
 	if len(args) == 0 {
 		flag.Usage()
 		return
+	}
+	for _, file := range args {
+		err := format(file, *prefix, *split, *w)
+		if err != nil {
+			fmt.Println(err)
+			flag.Usage()
+			return
+		}
 	}
 }
