@@ -1,5 +1,13 @@
 package bdd
 
+func newRowTestData(l int) [][]int {
+	rowtestdata := make([][]int, 0, l)
+	for i := 0; i != l; i++ {
+		rowtestdata = append(rowtestdata, make([]int, i))
+	}
+	return rowtestdata
+}
+
 var rowtestdataout = `
 [
 ]
